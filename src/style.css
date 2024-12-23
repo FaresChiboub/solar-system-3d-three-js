@@ -1,0 +1,22 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+body {
+  overflow: hidden;
+}
+#threeJs {
+  width: 100vw;
+  height: 100vh;
+}
+#info {
+  color: white;
+  position: absolute;
+  top: 20px;
+  width: 100%;
+  text-align: center;
+  z-index: 100;
+  display: block;
+  font-size: 22px;
+}
