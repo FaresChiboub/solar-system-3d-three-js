@@ -3,12 +3,13 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
+import { planets } from "./planets";
+import { sunlight, ambientLight } from "./light";
 
 // Height and width
 const width = window.innerWidth;
 const height = window.innerHeight;
 const aspectRatio = width / height;
-
 // Renderer setup
 const renderer = new THREE.WebGLRenderer({
   canvas: document.getElementById("screen"),
@@ -21,99 +22,135 @@ document.body.appendChild(renderer.domElement);
 // Scene and camera setup
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, aspectRatio, 50, 1000);
-camera.position.z = 250;
-
-// Texture loader
-const textureLoader = new THREE.TextureLoader();
+camera.position.z = 350;
 
 // Background texture
 scene.background = new THREE.CubeTextureLoader()
   .setPath("textures/cubeMaps/")
   .load(["px.png", "nx.png", "py.png", "ny.png", "pz.png", "nz.png"]);
 
-// Sun setup (MeshBasicMaterial for the Sun as it does not need lighting)
-const sunTexture = textureLoader.load("/textures/8k_sun.jpg");
-const sunGeometry = new THREE.SphereGeometry(40, 40, 40);
-const sunMaterial = new THREE.MeshBasicMaterial({
-  map: sunTexture,
-});
-const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+// Sun setup
+const sun = new THREE.Mesh(planets.sun.geometry, planets.sun.material);
 scene.add(sun);
-sun.position.x = 0;
-sun.position.z = 5;
 
-// Earth setup with MeshStandardMaterial (to interact with light)
-const earthTexture = textureLoader.load("/textures/2k_earth_daymap.jpg");
-const earthGeometry = new THREE.SphereGeometry(10, 80, 80);
-const earthMaterial = new THREE.MeshStandardMaterial({
-  map: earthTexture,
-  roughness: 0.5, // Slight roughness for realistic shading
-  metalness: 0.6, // Slight metalness for more realistic reflections
-});
-const earth = new THREE.Mesh(earthGeometry, earthMaterial);
+// Create the planets and their positions relative to the Sun
+const earth = new THREE.Mesh(planets.earth.geometry, planets.earth.material);
 scene.add(earth);
-earth.position.x = 120;
-earth.position.z = 5;
 
-// Moon setup with MeshStandardMaterial (to interact with light)
-const moonTexture = textureLoader.load("/textures/8k_moon.jpg");
-const moonGeometry = new THREE.SphereGeometry(3, 40, 40);
-const moonMaterial = new THREE.MeshStandardMaterial({
-  map: moonTexture,
-  side: THREE.DoubleSide,
-  roughness: 0.5,
-  metalness: 0.6,
-});
-const moon = new THREE.Mesh(moonGeometry, moonMaterial);
-earth.add(moon); // Add moon as child of Earth
+const moon = new THREE.Mesh(planets.moon.geometry, planets.moon.material);
+earth.add(moon);
 
-// Lighting setup
-// A strong directional light that mimics sunlight
-const sunlight = new THREE.DirectionalLight(0xffffff, 2);
-sunlight.position.set(30, 30, 30); // Position it slightly above and to the right
-scene.add(sunlight);
+const mars = new THREE.Mesh(planets.mars.geometry, planets.mars.material);
+scene.add(mars);
 
-// Ambient light to fill the scene (soft light without directional shadowing)
-const ambientLight = new THREE.AmbientLight(0x404040, 2); // Soft ambient light with a slight intensity
-scene.add(ambientLight);
+const jupiter = new THREE.Mesh(
+  planets.jupiter.geometry,
+  planets.jupiter.material
+);
+scene.add(jupiter);
 
+const venus = new THREE.Mesh(planets.venus.geometry, planets.venus.material);
+scene.add(venus);
+
+const neptune = new THREE.Mesh(
+  planets.neptune.geometry,
+  planets.neptune.material
+);
+scene.add(neptune);
+//saturn
+const saturn = new THREE.Mesh(
+  planets.neptune.geometry,
+  planets.neptune.material
+);
+scene.add(saturn);
+//saturn Ring
+const saturnRing = new THREE.Mesh(
+  planets.neptune.geometry,
+  planets.neptune.material
+);
+saturnRing.rotation.x = -Math.PI / 2;
+saturnRing.position.set(0, 0, 0);
+scene.add(saturnRing);
 // Orbit controls
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.update();
 
-const composer = new EffectComposer(renderer);
+// Lighting
+scene.add(sunlight);
+scene.add(ambientLight);
 
-// Create the render pass
+// Zoom control
+controls.minDistance = 150;
+controls.maxDistance = 500;
+//bloom effect
+const composer = new EffectComposer(renderer);
 const renderPass = new RenderPass(scene, camera);
 composer.addPass(renderPass);
-
-// Create the UnrealBloomPass (for the bloom effect)
 const bloomPass = new UnrealBloomPass(
   new THREE.Vector3(width, height),
-  1.2, // Strength
-  1.2, // Bloom radius
-  0 // Threshold
+  1.5,
+  2,
+  0
 );
-controls.minDistance = 200; 
-controls.maxDistance = 400;
+bloomPass.renderToScreen = true;
 composer.addPass(bloomPass);
+// Orbital distances
+const orbitalDistances = {
+  //planets distance from the sun
+  earth: 250,
+  venus: 200,
+  mars: 320,
+  jupiter: 420,
+  neptune: -490,
+  saturn: -600,
+  saturnRing:-680,
+  // Moon's distance from Earth
+  moon: 30,
+};
 
 // Animation loop
 function animate() {
   controls.update();
-
-  // Earth's orbit around the Sun
   const time = Date.now() * 0.0001;
-  earth.position.x = 150 * Math.cos(time);
-  earth.position.z = 150 * Math.sin(time);
-  earth.rotation.y += 0.003;
-  sun.rotation.y += 0.005;
 
-  // Rotate the Moon around the Earth (using a local coordinate system)
-  const moonOrbitRadius = 30; // Distance between Earth and Moon
-  const moonOrbitSpeed = 0.0015; // Moon's orbit speed around Earth
-  moon.position.x = moonOrbitRadius * Math.cos(time * moonOrbitSpeed); // Moon's X position
-  moon.position.z = moonOrbitRadius * Math.sin(time * moonOrbitSpeed); // Moon's Z position
+  // Earth orbit
+  earth.position.x = orbitalDistances.earth * Math.cos(time * 0.1);
+  earth.position.z = orbitalDistances.earth * Math.sin(time * 0.1);
+  earth.rotation.y += 0.003;
+
+  // Moon orbit around Earth
+  moon.position.x = orbitalDistances.moon * Math.cos(time * 0.05);
+  moon.position.z = orbitalDistances.moon * Math.sin(time * 0.05);
+
+  // Venus orbit
+  venus.position.x = orbitalDistances.venus * Math.cos(time * 0.07); // Adjust speed for realistic orbit
+  venus.position.z = orbitalDistances.venus * Math.sin(time * 0.07); // Adjust speed for realistic orbit
+  venus.rotation.y += 0.004;
+
+  // Mars orbit
+  mars.position.x = orbitalDistances.mars * Math.cos(time * 0.08); // Adjust speed for realistic orbit
+  mars.position.z = orbitalDistances.mars * Math.sin(time * 0.08); // Adjust speed for realistic orbit
+  mars.rotation.y += 0.004;
+
+  // Jupiter orbit
+  jupiter.position.x = orbitalDistances.jupiter * Math.cos(time * 0.2); // Adjust speed for realistic orbit
+  jupiter.position.z = orbitalDistances.jupiter * Math.sin(time * 0.2); // Adjust speed for realistic orbit
+  jupiter.rotation.y += 0.005;
+
+  // Neptune orbit
+  neptune.position.x = orbitalDistances.neptune * Math.cos(time * 0.05); // Adjust speed for realistic orbit
+  neptune.position.z = orbitalDistances.neptune * Math.sin(time * 0.05); // Adjust speed for realistic orbit
+  neptune.rotation.y += 0.004;
+  // saturn orbit
+  saturn.position.x = orbitalDistances.saturn * Math.cos(time * 0.05); // Adjust speed for realistic orbit
+  saturn.position.z = orbitalDistances.saturn * Math.sin(time * 0.05); // Adjust speed for realistic orbit
+  saturn.rotation.y += 0.004;
+   // saturnRing orbit
+   saturnRing.position.x = orbitalDistances.saturnRing * Math.cos(time * 0.05); // Adjust speed for realistic orbit
+   saturnRing.position.z = orbitalDistances.saturnRing * Math.sin(time * 0.05); // Adjust speed for realistic orbit
+   saturnRing.rotation.y += 0.004;
+  // Sun rotation (for visual effect)
+  sun.rotation.y += 0.005;
 
   // Render the scene with post-processing effects
   composer.render();
